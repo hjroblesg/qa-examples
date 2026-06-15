@@ -1,4 +1,4 @@
-# Setting Pytest/Selenium example
+# Setting up Pytest/Selenium example
 
 This example showcases how to use Slenium with Pytest, as well as Allure for reports.
 
