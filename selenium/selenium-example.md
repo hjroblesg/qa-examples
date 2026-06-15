@@ -6,11 +6,13 @@ This example showcases how to use Slenium with Pytest, as well as Allure for rep
 
 It is recommended to create a virtual environment first, here you may install all the requirements that will be needed to execute this sample.
     
-    # Create virtual env
+**1. Create virtual env**
+    
     python3 -m venv seleniumEnv
     # Activate environment
     source seleniumEnv/bin/activate
-    # Install deps:
+**2. Install deps:**
+    
     pip install selenium pytest allure-pytest webdriver-manager
 
     or you may also run an install from requirements file as:
@@ -21,7 +23,7 @@ It is recommended to create a virtual environment first, here you may install al
     then run:
     allure serve results_folder
 
-    # Execute test suite.
+**3. Execute test suite.**
 
     # Run all candymapper tests
     pytest -v -s -m candymapper
