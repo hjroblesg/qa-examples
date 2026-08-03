@@ -3,6 +3,7 @@ import allure
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from pages.candymapper_page import CandyMapperPage
+from pages.herokuapp_page import HerokuPage
 from allure_commons.types import AttachmentType
 
 
@@ -47,3 +48,7 @@ def pytest_runtest_makereport(item, call):
 @pytest.fixture
 def candymapper_page(browser):
     return CandyMapperPage(browser)
+
+@pytest.fixture
+def heroku_page(browser):
+    return HerokuPage(browser)
