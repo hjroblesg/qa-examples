@@ -12,10 +12,10 @@ and a deep-learning benchmark validator later — without changing the engine.
 
 ```
                  ┌─────────────────────────────────────────────┐
-                 │                 validators/                  │
-                 │  ContainerValidator (ABC)  ── mysql / api /  │
-                 │        │  reuse            dl (planned)       │
-                 └────────┼─────────────────────────────────────┘
+                 │                 validators/                 │
+                 │  ContainerValidator (ABC)  ── mysql / api / │
+                 │        │  reuse            dl (planned)     │
+                 └────────┼────────────────────────────────────┘
                           │ uses
                  ┌────────▼─────────┐
                  │   engine/        │   Docker: query/pull/run/copy/teardown
