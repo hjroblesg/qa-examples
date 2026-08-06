@@ -1,7 +1,10 @@
 # Runtime dependencies for the framework itself.
-# The engine shells out to the `docker` CLI and uses only the standard library,
-# so there are no runtime pip dependencies yet.
-#
+# The engine shells out to the `docker` CLI and uses only the standard library.
+
+# MySQL validator driver (imported lazily; only needed for real/integration runs,
+# not for the mocked unit tests).
+mysql-connector-python>=8.3
+
 # The functional layer (tests/*.robot) uses Robot Framework:
 robotframework>=6.1
 robotframework-requests>=0.9

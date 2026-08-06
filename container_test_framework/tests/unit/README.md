@@ -90,18 +90,20 @@ pip install -r requirements-dev.txt        # from repo root
 # all unit tests
 pytest
 
-# with coverage on the engine
-pytest --cov=utils.docker_utils --cov=utils.execute_utils --cov-report=term-missing
+# with coverage on the engine + validators
+pytest --cov=ctf --cov-report=term-missing
 
 # a single marker
+pytest -m mysql               # just the MySQLValidator tests
 pytest -m regression
-pytest -m "unit and edge"
+pytest -m "unit and not mysql"
 ```
 
-`pytest.ini` (repo root) scopes collection to `tests/unit/` and registers the
-`unit`, `docker_logic`, `edge` and `regression` markers.
+`pytest.ini` (repo root) scopes collection to `tests/unit/`, runs with
+`--strict-markers` (an unregistered marker fails the run), and registers the
+`unit`, `docker_logic`, `mysql`, `edge` and `regression` markers.
 
-> Note: `utils/execute_utils.py` reports partial coverage — its unused
+> Note: `ctf/engine/executor.py` reports partial coverage — its unused
 > `execute_workload()` helper and an unreachable dead-code loop are
 > intentionally left untested rather than covered by artificial tests. The
 > validator core (`docker_utils.py`) is at 100%.
