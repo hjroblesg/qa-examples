@@ -43,7 +43,8 @@ container-test-framework/
 │   │   ├── executor.py      # the single shell-execution seam
 │   │   └── config.py        # docker run options
 │   ├── validators/
-│   │   └── base.py          # ContainerValidator ABC + ValidationResult
+│   │   ├── base.py          # ContainerValidator ABC + ValidationResult
+│   │   └── mysql.py         # MySQLValidator: health/schema/CRUD/integrity
 │   ├── cli.py               # `python -m ctf` front-end
 │   └── __main__.py
 ├── tests/
@@ -137,7 +138,9 @@ python -m ctf --command rm_container   --image mysql --tag 8.0
 - [x] Hermetic unit layer — 26 tests, 100% line coverage on `engine/docker.py`
       (found & fixed 5 real defects; see `tests/unit/README.md`)
 - [x] `ContainerValidator` ABC so targets plug into a shared lifecycle
-- [ ] **MySQL validator** — health, schema, CRUD, data-integrity (unit + `testcontainers`)
+- [x] **MySQL validator** — health, schema, CRUD, data-integrity checks
+      + mocked unit tests (DB client injected; 98% coverage)
+- [ ] MySQL **integration** layer — `testcontainers` MySQL, run against a live DB
 - [ ] REST API validator — mocked unit tests + live contract/endpoint tests
 - [ ] DL benchmark validator — threshold-based, deterministic asserts (stretch)
 - [ ] CI workflow (lint + unit on push; integration on demand) and coverage gate
