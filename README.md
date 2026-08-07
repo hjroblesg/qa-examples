@@ -1,7 +1,7 @@
 # Container test Framework (CTF)
 Contains a small container-agnostic framework for validating containers. See more details inside folder.
 
-# QA Examples
+# QA Automation Examples
 This is a collection of QA automation examples using Playwright (TypeScript), Selenium, and Robot Framework. Demonstrates test design patterns, API testing, and CI/CD integration.
 
 Instructions on how to execute samples can be found inside each sample folder.
