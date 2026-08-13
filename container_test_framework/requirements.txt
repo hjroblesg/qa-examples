@@ -5,6 +5,11 @@
 # not for the mocked unit tests).
 mysql-connector-python>=8.3
 
-# The functional layer (tests/*.robot) uses Robot Framework:
+# The functional/integration layer (tests/*.robot) uses Robot Framework.
 robotframework>=6.1
 robotframework-requests>=0.9
+# MySQL suite (tests/mysql_tests.robot): DB keywords + driver.
+# Pinned to DatabaseLibrary 1.x for a stable keyword set (2.x deprecates the
+# classic Check If Exists / Row Count keywords used here).
+robotframework-databaselibrary>=1.4,<2
+pymysql>=1.1
