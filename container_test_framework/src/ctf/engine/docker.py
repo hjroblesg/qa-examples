@@ -15,6 +15,7 @@ import logging
 from ctf.engine import config
 from ctf.engine.executor import CommandExecutor
 from ctf.engine.image_ref import ImageRef
+from ctf.engine.run_options import RunOptions
 
 log = logging.getLogger("ctf.docker")
 
@@ -61,17 +62,19 @@ class Docker:
         log.info(message)
         return message
 
-    def run_container(self, image, container_tag="latest"):
+    def run_container(self, image, container_tag="latest", options=None):
         ref = ImageRef.parse(image, container_tag)
         result = self.ps_container(image, container_tag)
         if result:
             message = f"Container {ref.container_name} already created"
             log.info(message)
             return message
-        docker_options = config.DOCKER_OPTNS
-        command = [
-            f"docker run --name {ref.container_name} {docker_options} {ref.reference}"
-        ]
+        flags = (options or RunOptions()).as_flags()
+        cmd = f"docker run --name {ref.container_name}"
+        if flags:
+            cmd += f" {flags}"
+        cmd += f" {ref.reference}"
+        command = [cmd]
         output, rc = self.exec_utils.execute_commands(command)
         if rc == 0:
             message = f"Container is running under name: {ref.container_name}"

@@ -16,6 +16,8 @@ Techniques demonstrated, mapped to tests:
 """
 import pytest
 
+from ctf.engine import config
+
 pytestmark = [pytest.mark.unit, pytest.mark.docker_logic]
 
 
@@ -167,6 +169,32 @@ class TestRunContainer:
         docker.exec_utils.execute_commands.side_effect = [("", 0), ("port in use", 1)]
         message = docker.run_container("acme/mysql", "8.0")
         assert message == "Error attempting run command: port in use"
+
+    def test_run_options_inject_env_and_ports(self, docker, sent_commands):
+        """RunOptions lets the engine launch env-driven images like MySQL."""
+        from ctf.engine.run_options import RunOptions
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("", 0)]
+
+        message = docker.run_container(
+            "mysql", "8.0",
+            RunOptions(
+                env={"MYSQL_ROOT_PASSWORD": "secret", "MYSQL_DATABASE": "testdb"},
+                ports={3306: 3306},
+                options="-d",
+            ),
+        )
+
+        assert message == "Container is running under name: mysql-8.0"
+        assert sent_commands()[-1] == (
+            "docker run --name mysql-8.0 -d -p 3306:3306 "
+            "-e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=testdb mysql:8.0"
+        )
+
+    def test_default_run_still_uses_framework_options(self, docker, sent_commands):
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("", 0)]
+        docker.run_container("acme/mysql", "8.0")
+        run_cmd = sent_commands()[-1]
+        assert config.DOCKER_OPTNS in run_cmd and run_cmd.endswith("acme/mysql:8.0")
 
     @pytest.mark.edge
     def test_unexpected_return_code_on_run(self, docker):

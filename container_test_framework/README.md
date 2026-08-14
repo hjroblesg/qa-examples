@@ -11,11 +11,11 @@ and a deep-learning benchmark validator later — without changing the engine.
 ## Design
 
 ```
-                 ┌─────────────────────────────────────────────┐
-                 │                 validators/                 │
-                 │  ContainerValidator (ABC)  ── mysql / api / │
-                 │        │  reuse            dl (planned)     │
-                 └────────┼────────────────────────────────────┘
+                 ┌──────────────────────────────────────────────┐
+                 │                 validators/                  │
+                 │  ContainerValidator (ABC)  ── mysql / api /  │
+                 │        │  reuse            dl (planned)      │
+                 └────────┼─────────────────────────────────────┘
                           │ uses
                  ┌────────▼─────────┐
                  │   engine/        │   Docker: query/pull/run/copy/teardown
@@ -29,9 +29,9 @@ and a deep-learning benchmark validator later — without changing the engine.
 Two test layers prove different things:
 
 | Layer | Location | Proves | Container? |
-|-------|----------|--------|-----------|
+|-------|----------|--------|------------|
 | **Unit** | `tests/unit/` | The engine builds the right commands and branches correctly, in isolation | No — the executor seam is mocked |
-| **Functional / integration** | `tests/*.robot` (and `tests/integration/`, planned) | It works end-to-end against a live container | Yes |
+| **Functional / integration** | `tests/*.robot` (Robot Framework) | It works end-to-end against a live container | Yes |
 
 ## Layout
 
@@ -49,7 +49,9 @@ container-test-framework/
 │   └── __main__.py
 ├── tests/
 │   ├── unit/                # mocked, hermetic unit tests (see its README)
-│   └── *.robot              # Robot Framework functional layer
+│   ├── resources/           # shared Robot keywords (mysql.resource)
+│   ├── mysql_tests.robot    # MySQL functional/integration suite
+│   └── *.robot              # other Robot Framework suites (api, httpbin)
 ├── pyproject.toml           # packaging + `ctf` console script
 ├── pytest.ini               # unit-test config
 ├── requirements.txt         # runtime (Robot layer)
@@ -70,6 +72,10 @@ pytest --cov=ctf.engine --cov-report=term-missing
 
 # run the CLI against a real image (needs Docker)
 python -m ctf --command run_container --image acme/mysql --tag 8.0
+
+# run the MySQL functional suite (Robot Framework; starts a real MySQL, needs Docker)
+pip install -r requirements.txt
+robot tests/mysql_tests.robot
 ```
 
 ## CLI usage
@@ -87,6 +93,9 @@ python -m ctf --command <command> --image <image> [--tag <tag>]
 | `--command` | yes | — | One of the commands in the table below |
 | `--image` | yes | — | Any Docker image reference: `mysql`, `mysql:8.0`, `bitnami/mysql`, or `reg.io:5000/team/app:1.2`. Used verbatim for pull/run |
 | `--tag` | no | `latest` | Image tag. A tag written into `--image` (e.g. `mysql:8.0`) takes precedence over this |
+| `--env` | no | — | `run_container` only. Env vars as `KEY=VALUE` (repeatable) → `-e` flags |
+| `--publish` | no | — | `run_container` only. Port maps as `HOST:CONTAINER` (repeatable) → `-p` flags |
+| `--run-opts` | no | framework flags | `run_container` only. Replace the default `docker run` flags (e.g. `"-d"`) |
 | `--test` | no | — | *(reserved)* test labels to run — wired up with the validator suites |
 | `--exclude` | no | — | *(reserved)* test labels to skip |
 
@@ -115,6 +124,30 @@ python -m ctf --command <command> --image <image> [--tag <tag>]
 The container name (used for `run --name`, `ps`, `rm`) is the last path segment
 plus the tag. A registry port (the `:5000` above) is never mistaken for a tag.
 
+### Run options (env vars & ports)
+
+`run_container` accepts environment variables and port mappings, and can replace
+the default `docker run` flags — enough to launch env-driven images like MySQL
+through the engine itself:
+
+```bash
+python -m ctf --command run_container --image mysql --tag 8.0 \
+    --run-opts "-d" \
+    --publish 3306:3306 \
+    --env MYSQL_ROOT_PASSWORD=ctf-secret MYSQL_DATABASE=testdb
+```
+
+builds:
+
+```
+docker run --name mysql-8.0 -d -p 3306:3306 \
+    -e MYSQL_ROOT_PASSWORD=ctf-secret -e MYSQL_DATABASE=testdb mysql:8.0
+```
+
+Without `--run-opts`, the framework's default privileged flags are used (suited
+to workload containers, not MySQL). Env values are shell-escaped, so values with
+spaces are handled safely.
+
 ### Notes
 
 - **Return codes.** The CLI exits `0` on success and `1` on error (including bad
@@ -140,7 +173,9 @@ python -m ctf --command rm_container   --image mysql --tag 8.0
 - [x] `ContainerValidator` ABC so targets plug into a shared lifecycle
 - [x] **MySQL validator** — health, schema, CRUD, data-integrity checks
       + mocked unit tests (DB client injected; 98% coverage)
-- [ ] MySQL **integration** layer — `testcontainers` MySQL, run against a live DB
+- [x] MySQL **functional/integration** layer — Robot Framework suite
+      (`tests/mysql_tests.robot`) running health/schema/CRUD/integrity against a
+      real MySQL container (needs Docker)
 - [ ] REST API validator — mocked unit tests + live contract/endpoint tests
 - [ ] DL benchmark validator — threshold-based, deterministic asserts (stretch)
 - [ ] CI workflow (lint + unit on push; integration on demand) and coverage gate
