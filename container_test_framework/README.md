@@ -44,14 +44,16 @@ container-test-framework/
 │   │   └── config.py        # docker run options
 │   ├── validators/
 │   │   ├── base.py          # ContainerValidator ABC + ValidationResult
-│   │   └── mysql.py         # MySQLValidator: health/schema/CRUD/integrity
+│   │   ├── mysql.py         # MySQLValidator: health/schema/CRUD/integrity
+│   │   └── api.py           # APIValidator: health/status-code/contract
 │   ├── cli.py               # `python -m ctf` front-end
 │   └── __main__.py
 ├── tests/
 │   ├── unit/                # mocked, hermetic unit tests (see its README)
-│   ├── resources/           # shared Robot keywords (mysql.resource)
+│   ├── resources/           # shared Robot keywords (mysql.resource, api.resource)
 │   ├── mysql_tests.robot    # MySQL functional/integration suite
-│   └── *.robot              # other Robot Framework suites (api, httpbin)
+│   ├── rest_api_tests.robot # REST API suite (go-httpbin)
+│   └── *.robot              # other Robot Framework suites
 ├── pyproject.toml           # packaging + `ctf` console script
 ├── pytest.ini               # unit-test config
 ├── requirements.txt         # runtime (Robot layer)
@@ -73,9 +75,10 @@ pytest --cov=ctf.engine --cov-report=term-missing
 # run the CLI against a real image (needs Docker)
 python -m ctf --command run_container --image acme/mysql --tag 8.0
 
-# run the MySQL functional suite (Robot Framework; starts a real MySQL, needs Docker)
+# run the functional suites (Robot Framework; start real containers, need Docker)
 pip install -r requirements.txt
 robot tests/mysql_tests.robot
+robot tests/rest_api_tests.robot
 ```
 
 ## CLI usage
@@ -176,7 +179,11 @@ python -m ctf --command rm_container   --image mysql --tag 8.0
 - [x] MySQL **functional/integration** layer — Robot Framework suite
       (`tests/mysql_tests.robot`) running health/schema/CRUD/integrity against a
       real MySQL container (needs Docker)
-- [ ] REST API validator — mocked unit tests + live contract/endpoint tests
+- [x] **REST API validator** — health/status-code/contract checks
+      + mocked unit tests (HTTP client injected)
+- [x] REST API **functional/integration** layer — Robot Framework suite
+      (`tests/rest_api_tests.robot`) against a real `mccutchen/go-httpbin`
+      container (maintained, multi-arch; needs Docker)
 - [ ] DL benchmark validator — threshold-based, deterministic asserts (stretch)
 - [ ] CI workflow (lint + unit on push; integration on demand) and coverage gate
 
