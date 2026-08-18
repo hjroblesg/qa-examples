@@ -1,8 +1,12 @@
 *** Settings ***
-Documentation     Reusable keywords for the MySQL functional/integration suite:
-...               container lifecycle (via the docker CLI) and DB connectivity
-...               (via DatabaseLibrary + PyMySQL). Kept separate from the test
-...               cases so the same setup can back future MySQL suites.
+Documentation     Reusable keywords for the MySQL functional/integration suite.
+...
+...               Container lifecycle is driven THROUGH THE CTF ENGINE (the
+...               framework's own CLI: `python -m ctf ...`), so the functional
+...               layer dogfoods the same engine the unit tests cover. DB
+...               connectivity uses DatabaseLibrary + PyMySQL.
+...
+...               Requires the package importable: `pip install -e .`.
 Library           Process
 Library           OperatingSystem
 Library           DatabaseLibrary
@@ -12,7 +16,6 @@ Library           DatabaseLibrary
 # Overridable from the CLI with:  robot --variable DB_HOST:1.2.3.4 ...
 ${IMAGE}          mysql
 ${TAG}            8.0
-${CONTAINER}      ctf-mysql-${TAG}
 ${DB_MODULE}      pymysql
 ${DB_NAME}        testdb
 ${DB_USER}        root
@@ -25,17 +28,19 @@ ${READY_INTERVAL}    3s
 
 *** Keywords ***
 Start MySQL Container
-    [Documentation]    Launch a throwaway MySQL container with a known root
-    ...                password and database, publishing 3306 to the host.
-    # NB: the env tokens escape '=' (MYSQL_ROOT_PASSWORD\=...) so Run Process
-    # treats them as literal positional args, not Robot named arguments.
-    ${result}=    Run Process    docker    run    -d    --name    ${CONTAINER}
-    ...    -e    MYSQL_ROOT_PASSWORD\=${DB_PASS}
-    ...    -e    MYSQL_DATABASE\=${DB_NAME}
-    ...    -p    ${DB_PORT}:3306
-    ...    ${IMAGE}:${TAG}
+    [Documentation]    Launch MySQL through the ctf engine, publishing 3306 and
+    ...                passing the root password + database as env vars.
+    # NB: '=' is escaped (\=) so Run Process passes these as literal positional
+    # args rather than treating them as Robot named arguments.
+    ${result}=    Run Process    ${{sys.executable}}    -m    ctf
+    ...    --command    run_container    --image    ${IMAGE}    --tag    ${TAG}
+    ...    --run-opts\=-d
+    ...    --publish    ${DB_PORT}:3306
+    ...    --env    MYSQL_ROOT_PASSWORD\=${DB_PASS}    MYSQL_DATABASE\=${DB_NAME}
+    Log    ${result.stdout}
+    # The ctf CLI now exits non-zero on a failed run, so this catches it directly.
     Should Be Equal As Integers    ${result.rc}    0
-    ...    msg=Failed to start container: ${result.stderr}    values=False
+    ...    msg=ctf run_container failed: ${result.stdout} ${result.stderr}    values=False
 
 Wait Until MySQL Is Ready
     [Documentation]    Retry connecting until the server accepts connections
@@ -62,6 +67,7 @@ Open MySQL Under Test
     Seed Schema
 
 Close MySQL Under Test
-    [Documentation]    Full teardown used by Suite Teardown; never fails the run.
+    [Documentation]    Full teardown through the ctf engine; never fails the run.
     Run Keyword And Ignore Error    Disconnect From Database
-    Run Process    docker    rm    -f    ${CONTAINER}
+    Run Process    ${{sys.executable}}    -m    ctf
+    ...    --command    rm_container    --image    ${IMAGE}    --tag    ${TAG}
