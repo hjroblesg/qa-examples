@@ -1,8 +1,12 @@
 *** Settings ***
-Documentation     Reusable keywords for the REST API functional suite:
-...               container lifecycle (via the docker CLI) and an HTTP session
-...               (via RequestsLibrary). Target is mccutchen/go-httpbin — a
+Documentation     Reusable keywords for the REST API functional suite.
+...
+...               Container lifecycle is driven THROUGH THE CTF ENGINE (the
+...               framework's own CLI: `python -m ctf ...`); the HTTP session
+...               uses RequestsLibrary. Target is mccutchen/go-httpbin — a
 ...               maintained, multi-arch httpbin that listens on :8080.
+...
+...               Requires the package importable: `pip install -e .`.
 Library           Process
 Library           RequestsLibrary
 
@@ -11,7 +15,6 @@ Library           RequestsLibrary
 # Overridable from the CLI:  robot --variable BASE_URL:http://host:8080 ...
 ${IMAGE}          mccutchen/go-httpbin
 ${TAG}            v2.15.0
-${CONTAINER}      ctf-go-httpbin
 ${HOST_PORT}      8080
 ${CONTAINER_PORT}    8080
 ${BASE_URL}       http://127.0.0.1:${HOST_PORT}
@@ -22,12 +25,16 @@ ${READY_INTERVAL}    1s
 
 *** Keywords ***
 Start API Container
-    [Documentation]    Launch go-httpbin, publishing its port to the host.
-    ${result}=    Run Process    docker    run    -d    --name    ${CONTAINER}
-    ...    -p    ${HOST_PORT}:${CONTAINER_PORT}
-    ...    ${IMAGE}:${TAG}
+    [Documentation]    Launch go-httpbin through the ctf engine, publishing its
+    ...                port to the host.
+    ${result}=    Run Process    ${{sys.executable}}    -m    ctf
+    ...    --command    run_container    --image    ${IMAGE}    --tag    ${TAG}
+    ...    --run-opts\=-d
+    ...    --publish    ${HOST_PORT}:${CONTAINER_PORT}
+    Log    ${result.stdout}
+    # The ctf CLI now exits non-zero on a failed run, so this catches it directly.
     Should Be Equal As Integers    ${result.rc}    0
-    ...    msg=Failed to start container: ${result.stderr}    values=False
+    ...    msg=ctf run_container failed: ${result.stdout} ${result.stderr}    values=False
 
 Wait Until API Is Ready
     [Documentation]    Retry a request until the server responds.
@@ -45,5 +52,6 @@ Open API Under Test
     Wait Until API Is Ready
 
 Close API Under Test
-    [Documentation]    Full teardown used by Suite Teardown; never fails the run.
-    Run Process    docker    rm    -f    ${CONTAINER}
+    [Documentation]    Full teardown through the ctf engine; never fails the run.
+    Run Process    ${{sys.executable}}    -m    ctf
+    ...    --command    rm_container    --image    ${IMAGE}    --tag    ${TAG}
