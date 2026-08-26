@@ -11,10 +11,10 @@ and a deep-learning benchmark validator later — without changing the engine.
 ## Design
 
 ```
-                 ┌─────────────────────────────────────────────┐
+                 ┌──────────────────────────────────────────────┐
                  │                 validators/                  │
                  │  ContainerValidator (ABC)  ── mysql / api /  │
-                 │        │  reuse            dl (planned)       │
+                 │        │  reuse            dl (planned)      │
                  └────────┼─────────────────────────────────────┘
                           │ uses
                  ┌────────▼─────────┐
