@@ -24,6 +24,10 @@ class Docker:
     def __init__(self) -> None:
         self.exec_utils = CommandExecutor()
         self.workdir = os.getcwd()
+        # Outcome of the last lifecycle command (pull/run/teardown): True on
+        # success, False if the engine reported a failure. The CLI maps this to
+        # its exit code so CI / callers can detect a failed operation.
+        self.ok = True
 
     def query_container(self, image, container_tag="latest"):
         """Return the local `docker images` line matching this reference, if any."""
@@ -49,6 +53,7 @@ class Docker:
         result = self.query_container(image, container_tag).strip()
         # Short-circuit only when this exact repository AND tag are already local.
         if ref.repository in result and ref.tag in result:
+            self.ok = True
             message = f"Container {ref.reference} already pulled"
             log.info(message)
             return message
@@ -59,6 +64,7 @@ class Docker:
             message = f"Error attempting pull command: {output}"
         else:
             message = f"Something wrong happened"
+        self.ok = rc == 0
         log.info(message)
         return message
 
@@ -66,6 +72,7 @@ class Docker:
         ref = ImageRef.parse(image, container_tag)
         result = self.ps_container(image, container_tag)
         if result:
+            self.ok = True
             message = f"Container {ref.container_name} already created"
             log.info(message)
             return message
@@ -82,6 +89,7 @@ class Docker:
             message = f"Error attempting run command: {output}"
         else:
             message = f"Something else happened"
+        self.ok = rc == 0
         log.info(message)
         return message
 
@@ -103,5 +111,6 @@ class Docker:
             message = f"Error attempting run command: {output}"
         else:
             message = f"Something else happened"
+        self.ok = rc == 0
         log.info(message)
         return message

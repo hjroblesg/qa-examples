@@ -272,6 +272,41 @@ class TestCopyFile:
 # --------------------------------------------------------------------------- #
 # Cross-cutting: isolation guarantee                                          #
 # --------------------------------------------------------------------------- #
+class TestOutcomeFlag:
+    """docker.ok reflects the success of the last lifecycle command; the CLI
+    maps it to its exit code."""
+
+    def test_pull_success_sets_ok_true(self, docker):
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("", 0)]
+        docker.pull_container("mysql", "8.0")
+        assert docker.ok is True
+
+    def test_pull_failure_sets_ok_false(self, docker):
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("no such host", 1)]
+        docker.pull_container("mysql", "8.0")
+        assert docker.ok is False
+
+    def test_already_pulled_sets_ok_true(self, docker):
+        docker.exec_utils.execute_commands.return_value = ("mysql:8.0", 0)
+        docker.pull_container("mysql", "8.0")
+        assert docker.ok is True
+
+    def test_run_success_sets_ok_true(self, docker):
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("", 0)]
+        docker.run_container("acme/mysql", "8.0")
+        assert docker.ok is True
+
+    def test_run_failure_sets_ok_false(self, docker):
+        docker.exec_utils.execute_commands.side_effect = [("", 0), ("port in use", 1)]
+        docker.run_container("acme/mysql", "8.0")
+        assert docker.ok is False
+
+    def test_teardown_failure_sets_ok_false(self, docker):
+        docker.exec_utils.execute_commands.return_value = ("No such container", 1)
+        docker.teardown_container("mysql", "8.0")
+        assert docker.ok is False
+
+
 @pytest.mark.unit
 def test_no_real_subprocess_is_ever_spawned(docker):
     """Sanity check that the suite is hermetic: the execution seam is a mock,

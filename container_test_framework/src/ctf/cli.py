@@ -122,7 +122,9 @@ def main(argv=None) -> int:
     except Exception as e:  # noqa: BLE001 - top-level CLI guard
         log.exception(f"An error occurred while executing command: {e}")
         return 1
-    return 0
+    # Lifecycle commands report success via docker.ok; a failed pull/run/remove
+    # becomes a non-zero exit so callers (CI, the Robot suites) can detect it.
+    return 0 if docker.ok else 1
 
 
 if __name__ == "__main__":

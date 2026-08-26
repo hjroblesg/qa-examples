@@ -11,10 +11,10 @@ and a deep-learning benchmark validator later — without changing the engine.
 ## Design
 
 ```
-                 ┌──────────────────────────────────────────────┐
+                 ┌─────────────────────────────────────────────┐
                  │                 validators/                  │
                  │  ContainerValidator (ABC)  ── mysql / api /  │
-                 │        │  reuse            dl (planned)      │
+                 │        │  reuse            dl (planned)       │
                  └────────┼─────────────────────────────────────┘
                           │ uses
                  ┌────────▼─────────┐
@@ -29,7 +29,7 @@ and a deep-learning benchmark validator later — without changing the engine.
 Two test layers prove different things:
 
 | Layer | Location | Proves | Container? |
-|-------|----------|--------|------------|
+|-------|----------|--------|-----------|
 | **Unit** | `tests/unit/` | The engine builds the right commands and branches correctly, in isolation | No — the executor seam is mocked |
 | **Functional / integration** | `tests/*.robot` (Robot Framework) | It works end-to-end against a live container | Yes |
 
@@ -76,10 +76,17 @@ pytest --cov=ctf.engine --cov-report=term-missing
 python -m ctf --command run_container --image acme/mysql --tag 8.0
 
 # run the functional suites (Robot Framework; start real containers, need Docker)
+# these drive container lifecycle through the ctf engine, so install the package:
 pip install -r requirements.txt
+pip install -e .
 robot tests/mysql_tests.robot
 robot tests/rest_api_tests.robot
 ```
+
+Both Robot suites bring their container up and down **through the `ctf` engine**
+(`python -m ctf --command run_container/rm_container ...`), so the functional
+layer dogfoods the same engine the unit tests cover — running the suite is also
+a real end-to-end exercise of the engine against Docker.
 
 ## CLI usage
 
@@ -153,9 +160,9 @@ spaces are handled safely.
 
 ### Notes
 
-- **Return codes.** The CLI exits `0` on success and `1` on error (including bad
-  arguments or an engine exception). Running with no arguments prints help and
-  exits `1`.
+- **Return codes.** The CLI exits `0` on success and `1` on failure — including a
+  failed `pull`/`run`/`remove` reported by the engine (not just crashes). This is
+  what lets CI and the Robot suites detect a bad lifecycle command.
 - **Help.** `python -m ctf --help` lists all arguments and valid commands.
 
 ### Typical flow
