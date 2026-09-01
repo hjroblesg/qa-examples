@@ -1,13 +1,28 @@
-name: Unit
+name: Unit (container-test-framework)
 
-# The code gate: runs on every pull request (and push to main). Fast and
-# Docker-free — every external seam is mocked. Mark this as a required status
-# check in branch protection so no framework change merges without it passing.
+# Portfolio monorepo: this workflow lives at the REPO ROOT (.github/workflows/)
+# but targets the container_test_framework/ subfolder only.
+#
+# The code gate: runs on every pull request (and push to main) that touches the
+# framework. Fast and Docker-free — every external seam is mocked. Mark this as a
+# required status check in branch protection so no framework change merges without
+# it passing.
 on:
   push:
     branches: [main]
+    paths:
+      - 'container_test_framework/**'
+      - '.github/workflows/unit.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'container_test_framework/**'
+      - '.github/workflows/unit.yml'
+
+# All `run:` steps execute inside the subfolder.
+defaults:
+  run:
+    working-directory: container_test_framework
 
 jobs:
   unit:
@@ -25,6 +40,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: container_test_framework/requirements-dev.txt
 
       - name: Install test toolchain
         run: pip install -r requirements-dev.txt
@@ -38,5 +54,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-py${{ matrix.python-version }}
-          path: coverage.xml
+          # artifact paths are relative to the repo root, not working-directory
+          path: container_test_framework/coverage.xml
           if-no-files-found: ignore
